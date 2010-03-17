@@ -1,0 +1,42 @@
+.slide.section {
+  background: #008;
+}
+.slide.section h1, .slide.section h2, .slide.section h3, .slide.section h4 {
+  color: yellow;
+}
+
+.slide.subsection h1, .slide.subsection h2, .slide.subsection h3, .slide.subsection h4 {
+  background: yellow;
+  color: black;
+}
+
+.slide.unfinished {
+  background: #222;
+  color: #888;
+}
+
+.slide table th {
+  border-bottom: 5px solid gray;
+}
+
+.slide table td {
+  border-bottom: 1px solid gray;
+}
+
+.slide table {
+  font-size: 2em;
+  margin-left: auto;
+  margin-right: auto;
+}
+.slide table th {
+  text-align: left;
+  padding-right: 2em;
+  border-bottom: 5px solid gray;
+  vertical-align: top;
+}
+.slide table td {
+  padding-right: 2em;
+  vertical-align: top;
+  border-bottom: 1px solid gray;
+}
+

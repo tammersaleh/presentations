@@ -1,0 +1,21 @@
+!!!
+%html
+  %head
+    %meta{ :content => "text/html; charset=utf-8", "http-equiv" => "Content-type" }/
+    = stylesheet_link_tag 'slides'
+    = stylesheet_link_tag 'code'
+    = stylesheet_link_tag 'local'
+
+    = javascript_include_tag 'jquery-1.4.1'
+    = javascript_include_tag 'slides'
+    = javascript_include_tag 'code_highlighter/base'
+    = javascript_include_tag 'code_highlighter/css'
+    = javascript_include_tag 'code_highlighter/html'
+    = javascript_include_tag 'code_highlighter/javascript'
+    = javascript_include_tag 'code_highlighter/ruby'
+    = javascript_include_tag 'local'
+    
+  %body
+    #slides
+      = yield
+

@@ -1,0 +1,35 @@
+!!!
+%html
+  %head
+    %title
+      Podium
+      = ": #{@page_title}" if @page_title
+
+    = stylesheet_link_tag 'blueprint/screen',   :media => "screen, projection"
+    /[if IE]
+      = stylesheet_link_tag 'blueprint/lib/ie', :media => "screen, projection"
+    = stylesheet_link_tag 'blueprint/print',    :media => "print"
+
+    = stylesheet_link_tag 'local', :media => "all"
+    = stylesheet_link_tag 'code'
+
+  %body
+    .container
+      #banner.column.span-24.last
+        %h1
+          %a{:href => "/"} Podium
+    
+      #sidebar.column.span-6
+        %h2 Courses
+        .courses
+          %h3
+            %a{:href => "/courses/youre-doing-it-wrong"} You're Doing it Wrong
+      #content.column.span-18.last
+        = yield
+      #footer.column.span-24.last
+        .citation
+          Copyright Tammer Saleh, Inc.
+          = Time.now.year
+    = javascript_include_tag "jquery-1.4.1.js"
+    = javascript_include_tag "application.js", "code_highlighter/base.js", "code_highlighter/css.js", "code_highlighter/html.js", "code_highlighter/javascript.js", "code_highlighter/ruby.js"
+    

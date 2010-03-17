@@ -1,0 +1,822 @@
+.slide.section
+  
+  %h1 You're Doing it Wrong.
+  
+  %h2 Ruby on Rails Antipatterns and Refactoring.
+  
+  %h3 Tammer Saleh : tammersaleh.com
+  %h4 ...co-author (with Chad Pytel) of <strong>Rails Antipatterns</strong>
+
+.slide
+  
+  %h1 Pain & Money
+  
+  %h2 Tackling a Rescue Mission refactoring.
+  
+.slide
+  
+  <img height=500 src="assets/burning_eyes.jpg"/>
+  
+.slide.subsection#monolithic_controller
+  
+  %h3 AdminController#users
+  
+  :rubycode
+    def users
+      per_page = Variable::default_pagination_value
+      @users = User.find(:all)
+      # First, check to see if there 
+      # was an operation performed
+      if not params[:operation].nil? then
+    # there's more... 
+  
+.slide
+  
+  :rubycode
+        if (params[:operation] == "reset_password") then
+          user = User.find(params[:id])
+          user.generate_password_reset_access_key
+          user.password_confirmation = user.password
+          user.email_confirmation = user.email
+          user.save!
+          flash[:notice] = user.first_name + " " + 
+            user.last_name + "'s password has been reset."
+        end
+    # ...and more...
+  
+.slide
+  
+  :rubycode
+        if (params[:operation] == "delete_user") then
+          user = User.find(params[:id])
+          user.item_status = ItemStatus.find_deleted()
+          user.password_confirmation = user.password
+          user.email_confirmation = user.email        
+          user.save!
+          flash[:notice] = user.first_name + " " + 
+            user.last_name + " has been deleted"
+        end
+    # ...and still more...
+  
+.slide
+  
+  :rubycode
+  
+        if (params[:operation] == "activate_user") then
+          user = User.find(params[:id])
+          user.item_status = ItemStatus.find_active()
+          user.password_confirmation = user.password
+          user.email_confirmation = user.email
+          user.save!
+          flash[:notice] = user.first_name + " " + 
+            user.last_name + " has been activated"
+        end
+      end
+    # ...not done yet...
+  
+.slide
+  
+  :rubycode
+        if (params[:operation] == "show_user") then
+          @user = User.find(params[:id])
+          render :template => show_user
+          return true
+        end
+    # ...getting the idea?...
+  
+.slide
+  
+  :rubycode
+      user_order = 'username'
+      if not params[:user_sort_field].nil? then
+        user_order = params[:user_sort_field]
+        if !session[:user_sort_field].nil? && 
+           user_order == session[:user_sort_field] then
+          user_order += " DESC"
+        end
+        session[:user_sort_field] = user_order
+      end
+    # ...almost there...
+  
+.slide
+  
+  :rubycode
+      @user_pages, @users = paginate(:users, 
+        :order => user_order,
+        :conditions => ['item_status_id <> ?', 
+                        ItemStatus.find_deleted().id],
+        :per_page  => per_page)    
+    end
+    # ...and that was just one action.
+  
+.slide
+  
+  %h1 So Many Choices...
+  
+  %ul.small
+    %li.inc No tests
+    %li.inc Finding all users twice 
+    %li.inc Bad validations on user
+    %li.inc Monolithic admin controller
+    %li.inc Finders in the controller
+    %li.inc No error reporting (<tt>save!</tt>)
+    %li.inc In-memory, old-style pagination 
+    %li.inc Custom code instead of plugins for deleting, activating, etc.
+    %li.inc ...
+  
+.slide
+  
+  %h1 So Little Time.
+  
+  %ul
+    %li.inc Focus on client value
+    %li.inc Technical debt
+    %li.inc Highest yield change first
+  
+.slide
+  
+  %h1 Don't get distracted.  
+  
+  %ul
+    %li.inc Take notes of refactoring issues as you see them.
+    %li.inc Create Pivotal Tracker chores, Lighthouse tickes, etc.
+    %li.inc Make sure client sees everything.
+  
+.slide
+  
+  %h1 Monolithic controller
+  
+  %table
+    %tr
+      %td <tt>/admin/users?operation=reset_password?id=x</tt>
+    %tr
+      %td <tt>/admin/users?operation=delete_user?id=x</tt>
+    %tr
+      %td <tt>/admin/users?operation=activate_user?id=x</tt>
+    %tr
+      %td <tt>/admin/users?operation=show_user?id=x</tt>
+    %tr
+      %td <tt>/admin/users</tt>
+  
+  %h2.inc Convert to REST
+  
+.slide
+  
+  %h1 Talk with your client.
+  
+  %h2 Turns out, they never really needed the user activation functionality, so skip it.
+  
+.slide
+  
+  %h1 Importance of feature branches
+  
+  %ul
+    %li.inc Isolate the refactoring from master so you can still fight fires while refactoring.
+    %li.inc Also protects you from the whole thing going painfully wrong.
+    %li.inc <tt>git_remote_branch</tt>
+  
+.slide
+  
+  %h2 Write integration tests for existing behavior
+  %h2 Write functional/unit tests for added or modified behavior
+  
+.slide
+  
+  %h2 Start with integration tests for entire refactoring
+  
+  %ul
+    %li.inc Write functional test - watch it fail
+    %li.inc Write action - watch the test pass
+    %li.inc Wire into urls
+  
+  %h2 Repeat until integration tests pass
+  
+.slide
+  
+  <img height=500 src="assets/red-green-cycle.jpg"/>
+  
+.slide
+  
+  %h1 More about integration tests
+  
+  %h3 Cucumber stories or Rails integration tests
+  %h3 Webrat is key
+  
+.slide
+  
+  :rubycode
+    class AdminUsersTest < ActionController::IntegrationTest
+      context "given some users" do
+        setup { Factory(:user); Factory(:user) }
+    
+        a_logged_in_administrator do
+          context "when viewing users" do
+            setup { click_link 'admin'; click_link "users" }
+    
+            should "see all users" do
+              User.each {|u| assert_contain u.first_name }
+            end
+        # ...
+  
+.slide
+  
+  :rubycode
+    context "and drilling down to a single user" do
+      setup do
+        @user = User.first
+        click_link @user.full_name 
+      end
+    
+      should "see that user" do
+        assert_contain @user.first_name
+        assert_contain @user.last_name
+        assert_contain @user.email
+      end
+    end
+  
+.slide
+  
+  %h1 Add functional tests for new controller, one action at a time.
+  
+.slide
+  
+  :rubycode
+    class Admin::UsersControllerTest < ActionController::TestCase
+      should_route :get, 
+                   "/admin/users", 
+                   :controller => "admin/users", 
+                   :action => "index"
+  
+.slide
+  
+  :rubycode
+    when_logged_in_as_admin do
+      context "given some users" do
+        setup { Factory(:user); Factory(:user) }
+  
+        context "on GET to /admin/users" do
+          setup { get :index }
+  
+          should_render_template :index
+          should "assign users to @users" do
+            assert assigns(:users)
+            assert_equal User.count, assigns(:users).size
+          end
+        end
+      end
+  
+.slide
+  
+  :rubycode
+    class Admin::UsersController < Admin::BaseController
+      def index
+        per_page = Variable::default_pagination_value
+        @users = User.find(:all)
+    
+        user_order = 'username'
+        # ... same as before ...
+        @user_pages, @users = paginate(:users, 
+          :order => user_order,
+          :conditions => ['item_status_id <> ?', 
+                          ItemStatus::DELETED],
+          :per_page  => per_page)    
+      end
+    
+.slide
+  
+  :rubycode
+    def destroy
+      @user = User.find(params[:id])
+      @user.item_status = ItemStatus.find_deleted
+      @user.save!
+      flash[:notice] = "#{@user} has been removed."
+      redirect_to admin_users_url
+    end
+  
+.slide
+  
+  %h1 URL redirections?
+  
+  %ul
+    %li.inc Most don't need it.
+    %li.inc Apache redirects or rewrites
+    %li.inc Rails redirect
+    %li.inc RSS readers don't redirect.  Feedburner or rewrites.
+  
+.slide
+  
+  %h1 Takeaways:
+  
+  %ul
+    %li.inc Rescue missions are as much about process as about code.
+    %li.inc Client communication is key.
+    %li.inc Focus on client value.
+    %li.inc Use integration tests to verify large swaths of functionality.
+  
+  %h2 General best practices for agile development
+  
+.slide.subsection#testing_rake_tasks
+  
+  %h1 Rake Tasks
+  
+.slide
+  
+  %h1 Are you testing them?
+  
+.slide
+  
+  %h1 What makes them hard to test?
+  %ul
+    %li.inc By nature, scripts that live outside app
+    %li.inc Often have network and file access
+    %li.inc Often have output
+  
+.slide
+  
+  %h1 Example Task
+  
+  :rubycode
+    namespace :twitter do
+      task :search => :environment do
+        puts "Searching twitter."
+        Twitter.search("@cpytel").each do |result|
+          puts "Processing #{result.inspect}."
+          alert = Alert.create(:body => result)
+          alert.save_cache_file!
+        end
+      end
+      puts "All done!"
+    end
+  
+.slide
+  
+  %h1 One possible way to test
+  
+.slide
+  
+  :rubycode
+    context "rake twitter:search" do
+      setup do
+        # How slow is this going to be?  Very.
+        @out = `cd #{Rails.root} && 
+                rake twitter:search 2>&1`
+      end
+  
+.slide
+  
+  :rubycode
+    should "print a message at the beginning" do
+      assert_match /Searching/i, @out
+    end
+  
+.slide
+  
+  :rubycode
+    should "find all tweets containing @cpytel" do
+      # this one would be based entirely on luck.
+    end
+  
+.slide
+  
+  %h1 This has problems
+  %ul
+    %li.inc Slow
+    %li.inc No mocking or stubbing
+    %li.inc Task isn't in a transaction
+  
+.slide
+  
+  %h1 Basically, no sandboxing
+  
+.slide
+  
+  %h1 How do we fix this?
+  
+.slide
+  
+  %h1 Rake tasks are just Ruby
+  
+.slide
+  
+  %h1 Move it into the model
+  
+.slide
+  
+  :rubycode
+    class Alert < ActiveRecord::Base
+      def self.create_all_from_twitter_search(output = $stdout)
+        output.puts "Searching twitter."
+        Twitter.search("@cpytel").each do |result|
+          output.puts "Processing #{result.inspect}."
+          alert = create(:body => result)
+          alert.save_cache_file!
+        end
+        output.puts "All done!"
+      end
+    
+      def save_cache_file!
+        # Removes a file from the filesystem.
+      end
+    end
+  
+.slide
+  
+  %h1 The rake task is nice and skinny
+  
+  :rubycode
+    namespace :twitter do
+      task :search => :environment do
+        Alert.create_all_from_twitter_search
+      end
+    end
+  
+.slide
+  
+  %h1 Testing it is pretty much normal
+  
+.slide
+  
+  :rubycode
+    # test/unit/alert_test.rb
+    class AlertTest < ActiveSupport::TestCase
+      context "create_all_from_twitter_search" do
+        setup do
+          # Make sure none of the tests below hit the 
+          # network or touch the filesystem.
+          Alert.any_instance.stubs(:save_cache_file!)
+          Twitter.stubs(:search).returns([])
+          @output = StringIO.new
+        end
+  
+.slide
+  
+  :rubycode
+    should "print a message at the beginning" do
+      Alert.create_all_from_twitter_search(@output)
+      assert_match /Searching/i, @output.string
+    end
+  
+.slide
+  
+  :rubycode
+    should "save some cache files" do
+      Twitter.stubs(:search).returns(["one"])
+      alert = mock("alert")
+      alert.expects(:save_cache_file!)
+      Alert.stubs(:create).returns(alert)
+      Alert.create_all_from_twitter_search(@output)
+    end
+  
+.slide
+  
+  :rubycode
+    should "find all tweets containing @cpytel" do       
+      Twitter.expects(:search).
+         with("@cpytel").
+         returns(["body"])
+      Alert.create_all_from_twitter_search(@output)
+    end
+  
+.slide
+  
+  %h1 We can mock and stub!
+  
+.slide
+  
+  %h1 We can use normal tools
+  
+  %h3 Fakeweb
+  %h3 FileUtils::NoWrite
+  
+.slide
+  
+  %h1 In summary
+  
+  %h3 You can test drive development of your rake tasks
+  %h3 Rake tasks should live inside a model
+  
+.slide.subsection#rails_views
+  
+  %h1 Rails Views
+  
+.slide
+  
+  %h1 Know your Rails helpers
+  
+.slide
+  
+  %h1 Know how they change
+  
+.slide
+  
+  :code
+    # Edit form
+    <% form_for :user, 
+                :url => user_path(@user), 
+                :html => {:method => :put} do |form| %>
+  
+.slide
+  
+  :code
+    <% form_for @user do |form| %>
+  
+.slide
+  
+  %h2 New HTML
+  
+  :code
+    <form action="/users" method="POST" 
+          class="new_user" id="new_user">
+  
+  %h2 Update HTML
+  
+  :code
+    <form action="/users/5" method="post" 
+          class="edit_user" id="edit_user_5">
+      <div style="margin:0;padding:0">
+        <input name="_method" type="hidden" value="put" />
+      </div>
+  
+.slide
+  
+  :code
+    <!-- posts/index.html.erb -->
+    <% @posts.each do |post| -%>
+      <h2><%=h post.title %></h2>
+      <%= format_content post.body %>  
+      <p><%= link_to 'Email author', 
+                     mail_to(post.user.email) %></p>
+    <% end -%>
+  
+.slide
+  
+  %h1 Move the post content to a partial
+  
+.slide
+  
+  :code
+    <!-- posts/index.html.erb -->
+    <% @posts.each do |post| -%>
+      <%= render :partial => 'post', :object => :post %>
+    <% end -%>
+  
+    <!-- posts/_post.erb -->
+    <h2><%=h post.title %></h2>
+    <%= format_content post.body %>
+    <p><%= link_to 'Email author', 
+                   mail_to(post.user.email) %></p>
+  
+.slide
+  
+  %h1 Looping was built into render
+  
+.slide
+  
+  :code
+    <!-- posts/index.html.erb -->
+    <%= render :partial => 'post', :collection => @posts %>
+  
+    <!-- posts/_post.erb -->
+    <h2><%=h post.title %></h2>
+    <%= format_content post.body %>
+    <p><%= link_to 'Email author', 
+                   mail_to(post.user.email) %></p>
+  
+.slide
+  
+  %h1 But there is duplication and common naming here
+  
+.slide
+  
+  :code
+    <%= render :partial => @posts %>
+  
+.slide
+  
+  %h1 Dynamic page titles
+  
+.slide
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <head>
+      <title>Acme Widgets : TX-300 Utility Widget</title>
+    </head>
+  
+.slide
+  
+  :rubycode
+    class PagesController < ApplicationController
+      def show
+        @widget = Widgets.find(params[:id])
+        @title = @widget.name
+      end
+    end
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <head>
+      <title>Acme Widgets : <%= @title %></title>
+    </head>
+  
+.slide
+  
+  %h1 This is all presentation (view) stuff and there is a helper to do it in the view
+  
+.slide
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <head>
+      <title>Acme Widgets : <%= yield(:title) %></title>
+    </head>
+  
+    <!-- widgets/show.html.erb -->
+    <% content_for :title, @widget.title %>
+  
+.slide
+  
+  %h1 Default title
+  
+.slide
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <head>
+      <title>
+        Acme Widgets : 
+        <%= yield(:title) || "Home" %>
+      </title>
+    </head>
+  
+.slide
+  
+  %h1 What else can we use this for
+  
+.slide
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <div class="sidebar">
+      This is content for the sidebar.
+      <%= link_to "Your Account", account_url %></li>
+    </div>
+  
+    <div class="main">
+      The main content of the page
+    </div>
+  
+.slide
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <%= yield(:sidebar) %> 
+  
+    <div class="main">
+      The main content of the page
+    </div>
+  
+    <!-- layouts/application.html.erb -->
+    <% content_for :sidebar do %>
+      <div class="sidebar">
+        This is content for the sidebar.
+        <%= link_to "Your Account", account_url %></li>
+      </div>
+    <% end %>
+  
+.slide
+  
+  %h1 Avoid duplication
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <div class="sidebar">
+      <%= yield(:sidebar) %> 
+    </div>
+  
+    <div class="main">
+      The main content of the page
+    </div>
+  
+    <!-- layouts/application.html.erb -->
+    <% content_for :sidebar do %>
+      This is content for the sidebar.
+      <%= link_to "Your Account", account_url %></li>
+    <% end %>
+  
+.slide
+  
+  %h1 Conditional sidebar
+  
+  :code
+    <!-- layouts/application.html.erb -->
+    <% if yield(:sidebar) -%>
+      <div class="sidebar">
+        <%= yield(:sidebar) %> 
+      </div>
+    <% end -%>
+  
+    <div class="main">
+      The main content of the page
+    </div>
+  
+    <!-- layouts/application.html.erb -->
+    <% content_for :sidebar do %>
+      This is content for the sidebar.
+      <%= link_to "Your Account", account_url %></li>
+    <% end %>
+
+.slide.subsection#read_the_book
+  
+  %h1 Read the book
+  
+  ![Book](assets/antipatterns-cover.jpg)
+  <img height=500 src="assets/antipatterns-cover.jpg"/>
+  
+.slide
+  
+  %h1 Questions?
+  
+.slide.subsection#audience_submissions
+  
+  %h1 Audience submissions & one-offs.
+  
+.slide
+  
+  %h2 You're doing it wrong.
+  
+  :rubycode
+    photos = photos[0, photos.size > limit ? 
+                       limit : 
+                       photos.size]
+  
+  %h2 Better
+  
+  :rubycode
+    photos = photos[0, limit]
+ 
+.slide
+ 
+  %h3 You're doing it wrong.
+  
+  :rubycode
+    @order_type = params[:order_type] ? 
+                    params[:order_type] : 
+                    "New"
+  
+  %h3 Better
+  
+  :rubycode
+    params[:order_type] ||= "New"
+  
+  %h3 Best
+  
+  %h4 Set the default in the database.  Rails will see it.
+  
+.slide
+ 
+  %h2 You're doing it wrong.
+  
+  :rubycode
+    class Invitation < ActiveRecord::Base
+      def encoded_id
+        self.id*10011981 * 1820062 - 1981
+      end
+      # ...
+  
+.slide
+ 
+  %h2 You're (still) doing it wrong.
+  
+  :rubycode
+      # ...
+      def self.decode_id(id)
+        i = ((id.to_i + 1981)/1820062)/10011981
+        if (i*10011981 * 1820062 - 1981)==id.to_i
+          Invitation.find(i).id rescue false
+        else
+          false
+        end
+      end
+    end
+  
+.slide
+  
+  %h1 Better
+  
+  :rubycode
+    class Invitation < ActiveRecord::Base
+      def self.decoded_id(id)
+        Base64.decode64s(id)
+      end
+  
+      def self.find_by_encoded_id(id)
+        find(decoded_id(id))
+      end
+  
+      def encoded_id
+        Base64.encode64s(id)
+      end
+    end
+  
+  

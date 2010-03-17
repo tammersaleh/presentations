@@ -1,0 +1,11 @@
+log/*
+tmp/*
+tmp/**/*
+*.DS_Store
+coverage*
+*.swp
+tmp/restart.txt
+webrat.*
+
+!.keep
+

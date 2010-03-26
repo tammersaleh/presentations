@@ -3,9 +3,53 @@ $(function() {
   podium.initialize();
 });
 
+self.Key = function(keyCode) {
+  var self = this;
+  self.key = keyCode;
+
+  self.is_next = function() {
+    return(self.key == 32 || self.key == 39 || self.key == 40)
+  };
+  self.is_prev = function() { 
+    return(self.key == 37 || self.key == 38)
+  };
+  self.want_thumbnails = function() { 
+    return(self.key == 67)
+  };
+  self.want_sections = function() { 
+    return(self.key == 83)
+  };
+  self.want_slides = function() { 
+    return(self.key == 27)
+  };
+};
+
+function Keyboard(callbacks) {
+  var self = this;
+  self.commands = callbacks;
+
+  //  See e.g. http://www.quirksmode.org/js/events/keys.html for keycodes
+  self.keyDown = function(event) {
+    if (event.ctrlKey || event.altKey || event.metaKey)
+       return true;
+
+    var key = new Key(event.keyCode);
+
+    console.log('key: ' + key)
+
+    if (key.is_next()) {                self.commands.next();
+    } else if (key.is_prev()) {         self.commands.prev();
+    } else if (key.want_thumbnails()) { self.commands.thumbnails();
+    } else if (key.want_sections()) {   self.commands.sections();
+    } else if (key.want_slides()) {     self.commands.slides();
+    } else {                            return true;
+    }
+    return false 
+  };
+}
+
 function Podium() {
   var self = this;
-
   self.initialize = function() {
     self.sections   = new Sections(self);
     self.slides     = new Slides(self);
@@ -16,40 +60,21 @@ function Podium() {
     self.thumbnails.initialize();
     self.notes.initialize();
     self.slides.initialize();
+    document.onkeydown = new Keyboard(self.commands).keyDown;
+  };
 
-    document.onkeydown = self.keyDown;
+  self.commands = {
+    next:       function () { self.slides.next() },
+    prev:       function () { self.slides.prev() },
+    thumbnails: function () { self.thumbnails.toggle() },
+    sections:   function () { self.sections.toggle() },
+    slides:     function () { self.slides.show() },
   };
 
   self.hideAll = function() {
     $('#thumbnails').hide();
     $('#sections').hide();
     $('#slides').hide();
-  };
-
-  //  See e.g. http://www.quirksmode.org/js/events/keys.html for keycodes
-  self.keyDown = function(event)
-  {
-    var key = event.keyCode;
-
-    if (event.ctrlKey || event.altKey || event.metaKey)
-       return true;
-
-    console.log('key: ' + key)
-
-    if (key == 32 || key == 39 || key == 40) { 
-      self.slides.next();
-    } else if (key == 37 || key == 38) { 
-      self.slides.prev();
-    } else if (key == 67) { 
-      self.thumbnails.toggle();
-    } else if (key == 83) { 
-      self.sections.toggle();
-    } else if (key == 27) { 
-      self.slides.show();
-    } else {
-      return true;
-    }
-    return false 
   };
 };
 
@@ -104,10 +129,10 @@ function Slides(podium_reference) {
   };
 
   self.center = function() {
-    var slide_height = $("#slides .current").height()
-    var top = (0.5 * parseFloat($("#slides").height())) - (0.5 * parseFloat(slide_height))
-    $("#slides .current").css('padding-top', top)
-    $("#slides .current").css('padding-bottom', top)
+    var slide_height = $("#slides .current").height();
+    var top = (0.5 * parseFloat($("#slides").height())) - (0.5 * parseFloat(slide_height));
+    $("#slides .current").css('padding-top', top);
+    $("#slides .current").css('padding-bottom', top);
   };
 };
 
@@ -120,8 +145,8 @@ function Thumbnails(podium_reference) {
     $('#thumbnails .slide').hover(function() { $(this).addClass("hover")   }, 
                                   function() { $(this).removeClass("hover")});
     $('#thumbnails .slide').click(function() { 
-      self.podium.slides.focus($("#slides .slide").eq($("#thumbnails .slide").index($(this))));
       self.toggle();
+      self.podium.slides.focus($("#slides .slide").eq($("#thumbnails .slide").index($(this))));
     });
     self.toggle();
   };
@@ -160,8 +185,8 @@ function Sections(podium_reference) {
     $('#sections .section').hover(function() { $(this).addClass("hover")   }, 
                                   function() { $(this).removeClass("hover")});
     $('#sections .section').click(function() { 
-      self.podium.slides.focus($("#slides .slide#" + $(this).attr('rel')));
       self.toggle();
+      self.podium.slides.focus($("#slides .slide#" + $(this).attr('rel')));
     });
 
     self.toggle();

@@ -1,7 +1,7 @@
 module HtmlCode
   include Haml::Filters::Base
   def render(text)
-    "<pre><code class='html'>#{Haml::Helpers.html_escape(text).strip}</code></pre>"
+    "<pre><code class='html'>#{Haml::Helpers.html_escape(text).sub(/^\n*/, "").rstrip}</code></pre>"
   end
 
   def compile(precompiler, text)
@@ -18,7 +18,7 @@ end
 module RubyCode
   include Haml::Filters::Base
   def render(text)
-    "<pre><code class='ruby'>#{Haml::Helpers.html_escape(text).strip}</code></pre>"
+    "<pre><code class='ruby'>#{Haml::Helpers.html_escape(text).sub(/^\n*/, "").rstrip}</code></pre>"
   end
 
   def compile(precompiler, text)
@@ -35,7 +35,7 @@ end
 module Code
   include Haml::Filters::Base
   def render(text)
-    "<pre><code>#{Haml::Helpers.html_escape(text).strip}</code></pre>"
+    "<pre><code>#{Haml::Helpers.html_escape(text).sub(/^\n*/, "").rstrip}</code></pre>"
   end
 
   def compile(precompiler, text)

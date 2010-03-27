@@ -3,11 +3,17 @@
   %h1 You're Doing it Wrong.
   
   %h2 Ruby on Rails Antipatterns and Refactoring.
-  
-  %h3 Tammer Saleh : tammersaleh.com
-  %h4 ...co-author (with Chad Pytel) of <strong>Rails Antipatterns</strong>
 
-.slide
+.slide.section
+  
+  %h1 Tammer Saleh 
+  %h2 http://tammersaleh.com
+  %h3 ...Consultant & ex-Thoughtbotter
+  %h3 ...original author of Shoulda
+  %h3 ...original author of Hoptoad
+  %h3 ...co-author (with Chad Pytel) of <strong>Rails Antipatterns</strong>
+
+.slide.subsection
   
   %h1 Pain & Money
   
@@ -29,91 +35,103 @@
         # First, check to see if there 
         # was an operation performed
         if not params[:operation].nil? then
-  %h3 there's more... 
+      ...
+  %h2 there's more... 
   
 .slide
   
   .small
     :rubycode
-          if (params[:operation] == "reset_password") then
-            user = User.find(params[:id])
-            user.generate_password_reset_access_key
-            user.password_confirmation = user.password
-            user.email_confirmation = user.email
-            user.save!
-            flash[:notice] = user.first_name + " " + 
-              user.last_name + "'s password has been reset."
-          end
-  %h3 ...and more...
+      ...
+      if (params[:operation] == "reset_password") then
+        user = User.find(params[:id])
+        user.generate_password_reset_access_key
+        user.password_confirmation = user.password
+        user.email_confirmation = user.email
+        user.save!
+        flash[:notice] = user.first_name + " " + 
+          user.last_name + "'s password has been reset."
+      end
+      ...
+  %h2 ...and more...
   
 .slide
     
   .small
     :rubycode
-          if (params[:operation] == "delete_user") then
-            user = User.find(params[:id])
-            user.item_status = ItemStatus.find_deleted()
-            user.password_confirmation = user.password
-            user.email_confirmation = user.email        
-            user.save!
-            flash[:notice] = user.first_name + " " + 
-              user.last_name + " has been deleted"
-          end
-  %h3 ...and still more...
+      ...
+      if (params[:operation] == "delete_user") then
+        user = User.find(params[:id])
+        user.item_status = ItemStatus.find_deleted()
+        user.password_confirmation = user.password
+        user.email_confirmation = user.email        
+        user.save!
+        flash[:notice] = user.first_name + " " + 
+          user.last_name + " has been deleted"
+      end
+      ...
+  %h2 ...and still more...
   
 .slide
   
   .small
     :rubycode
-          if (params[:operation] == "activate_user") then
-            user = User.find(params[:id])
-            user.item_status = ItemStatus.find_active()
-            user.password_confirmation = user.password
-            user.email_confirmation = user.email
-            user.save!
-            flash[:notice] = user.first_name + " " + 
-              user.last_name + " has been activated"
-          end
+      ...
+        if (params[:operation] == "activate_user") then
+          user = User.find(params[:id])
+          user.item_status = ItemStatus.find_active()
+          user.password_confirmation = user.password
+          user.email_confirmation = user.email
+          user.save!
+          flash[:notice] = user.first_name + " " + 
+            user.last_name + " has been activated"
         end
-  %h3 ...not done yet...
+      end
+      ...
+  %h2 ...not done yet...
   
 .slide
   
   .small
     :rubycode
-          if (params[:operation] == "show_user") then
-            @user = User.find(params[:id])
-            render :template => show_user
-            return true
-          end
-  %h3 ...getting the idea?...
+      ...
+      if (params[:operation] == "show_user") then
+        @user = User.find(params[:id])
+        render :template => show_user
+        return true
+      end
+      ...
+  %h2 ...getting the idea?...
   
 .slide
   
   .small
     :rubycode
-        user_order = 'username'
-        if not params[:user_sort_field].nil? then
-          user_order = params[:user_sort_field]
-          if !session[:user_sort_field].nil? && 
-             user_order == session[:user_sort_field] then
-            user_order += " DESC"
-          end
-          session[:user_sort_field] = user_order
+      ...
+      user_order = 'username'
+      if not params[:user_sort_field].nil? then
+        user_order = params[:user_sort_field]
+        if !session[:user_sort_field].nil? && 
+           user_order == session[:user_sort_field] then
+          user_order += " DESC"
         end
-  %h3 ...almost there...
+        session[:user_sort_field] = user_order
+      end
+      ...
+  %h2 ...almost there...
   
 .slide
   
   .small
     :rubycode
+      ...
         @user_pages, @users = paginate(:users, 
           :order => user_order,
           :conditions => ['item_status_id <> ?', 
                           ItemStatus.find_deleted().id],
           :per_page  => per_page)    
       end
-  %h3 ...and that was just one action.
+  %h2 ...and that was just one action.
   
 .slide
   
@@ -134,19 +152,20 @@
   
   %h1 So Little Time.
   
+  %h1 Focus on...
   %ul
-    %li.inc Focus on client value
-    %li.inc Technical debt
-    %li.inc Highest yield change first
+    %li.inc Client Value
+    %li.inc Reducing Technical Debt
+    %li.inc Fixing the Highest Yield Change First
   
 .slide
   
   %h1 Don't get distracted.  
   
   %ul
-    %li.inc Take notes of refactoring issues as you see them.
-    %li.inc Create Pivotal Tracker chores, Lighthouse tickes, etc.
-    %li.inc Make sure client sees everything.
+    %li.inc Record, but don't fix issues as you see them.
+    %li.inc Pivotal Tracker chores, Lighthouse tickes, etc.
+    %li.inc Visibility is key.
   
 .slide
   
@@ -214,14 +233,22 @@
     :rubycode
       class AdminUsersTest < ActionController::IntegrationTest
         context "given some users" do
-          setup { Factory(:user); Factory(:user) }
+          setup do
+            Factory(:user)
+            Factory(:user) 
+          end
       
           a_logged_in_administrator do
             context "when viewing users" do
-              setup { click_link 'admin'; click_link "users" }
+              setup do
+                click_link "admin"
+                click_link "users" 
+              end
       
               should "see all users" do
-                User.each {|u| assert_contain u.first_name }
+                User.all.each do |user| 
+                  assert_contain user.first_name
+                end
               end
           # ...
   
@@ -240,7 +267,7 @@
         assert_contain @user.email
       end
     end
-  
+
 .slide
   
   %h1 Add functional tests for new controller, one action at a time.
@@ -261,7 +288,10 @@
     :rubycode
       when_logged_in_as_admin do
         context "given some users" do
-          setup { Factory(:user); Factory(:user) }
+          setup do
+            Factory(:user)
+            Factory(:user) 
+          end
     
           context "on GET to /admin/users" do
             setup { get :index }
@@ -311,8 +341,8 @@
   %ul
     %li.inc Most don't need it.
     %li.inc Apache redirects or rewrites
-    %li.inc Rails redirect
-    %li.inc RSS readers don't redirect.  Feedburner or rewrites.
+    %li.inc Rails or Rack redirect
+    %li.inc RSS readers don't redirect.  Use Feedburner or rewrites.
   
 .slide
   
@@ -330,17 +360,15 @@
   
   %h1 Rake Tasks
   
-.slide
-  
-  %h1 Are you testing them?
+  %h2 Are you testing them?
   
 .slide
   
   %h1 What makes them hard to test?
   %ul
-    %li.inc By nature, scripts that live outside app
-    %li.inc Often have network and file access
-    %li.inc Often have output
+    %li.inc By nature, they are scripts that live outside your app.
+    %li.inc Often have network and file access.
+    %li.inc Often have terminal output.
   
 .slide
   
@@ -356,8 +384,8 @@
             alert = Alert.create(:body => result)
             alert.save_cache_file!
           end
+          puts "All done!"
         end
-        puts "All done!"
       end
   
 .slide
@@ -394,7 +422,7 @@
   %ul
     %li.inc Slow
     %li.inc No mocking or stubbing
-    %li.inc Task isn't in a transaction
+    %li.inc Task isn't in the test transaction
   
 .slide
   
@@ -498,16 +526,14 @@
   
   %h1 We can mock and stub!
   
-.slide
-  
-  %h1 We can use normal tools
-  
-  %h3 Fakeweb
-  %h3 FileUtils::NoWrite
+  %h2 Mocha / rr
+  %h2 Fakeweb
+  %h2 FakeFS
+  %h2 FileUtils::NoWrite
   
 .slide
   
-  %h1 In summary
+  %h1 Takeaways
   
   %h3 You can test drive development of your rake tasks
   %h3 Rake tasks should live inside a model
@@ -746,6 +772,13 @@
       </div>
     <% end %>
   
+.slide
+  
+  %h1 Takeaways
+  
+  %h3 Rails comes with a large number of helpers.
+  %h3 Learn them and code happier.
+  
 .slide.subsection#read_the_book
   
   %h1 Read the book
@@ -758,7 +791,7 @@
   
 .slide.subsection#audience_submissions
   
-  %h1 Audience submissions & one-offs.
+  %h1 Audience Submissions
   
 .slide
   

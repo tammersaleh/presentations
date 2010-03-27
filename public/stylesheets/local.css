@@ -1,13 +1,21 @@
-.slide.section {
-  background: #008;
-}
-.slide.section h1, .slide.section h2, .slide.section h3, .slide.section h4 {
-  color: yellow;
+body {
+  font-family: Raleway;
+  background: #333333;
+  color: white;
 }
 
+.slide.section {
+  background: black;
+  color: white;
+  font-weight: bold;
+}
+
+/* .slide.section h1, .slide.section h2, .slide.section h3, .slide.section h4 { */
+/*   color: black; */
+/* } */
+
 .slide.subsection h1, .slide.subsection h2, .slide.subsection h3, .slide.subsection h4 {
-  background: yellow;
-  color: black;
+  color: yellow;
 }
 
 .slide.unfinished {

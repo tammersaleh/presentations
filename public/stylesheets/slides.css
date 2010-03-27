@@ -10,7 +10,6 @@
 
 #slides .slide {
   display: none;
-  border: 1px solid #fff;
 }
 
 #slides .slide.current {
